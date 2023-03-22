@@ -32,4 +32,18 @@ public class BlobService
         Response<BlobDownloadInfo>? response = await blobClient.DownloadAsync();
         return response.Value.Content;
     }
+    
+    public async Task DeleteAsync(string fileName)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var blobClient = containerClient.GetBlobClient(fileName);
+        await blobClient.DeleteAsync();
+    }
+
+    public async Task SetBlobTierAsync(string fileName, AccessTier tier)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var blobClient = containerClient.GetBlobClient(fileName);
+        await blobClient.SetAccessTierAsync(tier);
+    }
 }
