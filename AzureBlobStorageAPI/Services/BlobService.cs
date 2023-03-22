@@ -11,7 +11,7 @@ public class BlobService
 
     public BlobService(IConfiguration configuration)
     {
-        string? connectionString = configuration["AzureBlobStorage:ConnectionString"];
+        string? connectionString = configuration["AzureBlobConnectionString"];
         _containerName = configuration["AzureBlobStorage:ContainerName"];
         _blobServiceClient = new BlobServiceClient(connectionString);
     }

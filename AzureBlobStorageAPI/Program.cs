@@ -1,7 +1,12 @@
 using Azure.Storage.Blobs.Models;
 using AzureBlobStorageAPI.Services;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddAzureKeyVault(
+    new Uri($"{builder.Configuration["AzureKeyVault:VaultUri"]}"),
+    new DefaultAzureCredential());
 
 builder.Services.AddSingleton<BlobService>();
 
