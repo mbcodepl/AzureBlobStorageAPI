@@ -1,0 +1,44 @@
+# Visual Studio files
+.vs/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.exe
+*.zip
+*.log
+*.vspscc
+*.vssscc
+*.userprefs
+bin/
+obj/
+
+# Build results
+[Bb]uild/
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Node.js
+node_modules/
+npm-debug.log
+
+# Test Results
+[Tt]est[Rr]esult*/
+*.testsettings
+
+# SQL Server files
+*.mdf
+*.ldf
+
+# Miscellaneous
+Thumbs.db
+Desktop.ini
+
+# JetBrains IDE files
+.idea/
+*.iml
+
+# End of .gitignore file for .NET Core API
