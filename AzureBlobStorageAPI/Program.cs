@@ -2,6 +2,11 @@ using Azure.Storage.Blobs.Models;
 using AzureBlobStorageAPI.Services;
 using Azure.Identity;
 using AzureBlobStorageAPI.Models;
+using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.Swagger;
+using Swashbuckle.AspNetCore.SwaggerUI;
+using Swashbuckle.AspNetCore.SwaggerGen;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,10 +16,16 @@ builder.Configuration.AddAzureKeyVault(
 
 builder.Services.AddSingleton<BlobService>();
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "AzureBlobStorageAPI", Version = "v1" }));
+
 var app = builder.Build();
 
-
-app.MapGet("/", () => "Hello World!");
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.MapGet("api/blob/listcontainers", async (BlobService blobService) =>
 {
@@ -64,24 +75,19 @@ app.MapPut("api/blob/settier/{fileName}/{tier}", async (BlobService blobService,
 
 app.MapPost("api/blob/upload-sample-files", async (BlobService blobService) =>
 {
-    // Create a sample block blob
     byte[] blockBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample block blob.");
     using var blockBlobStream = new MemoryStream(blockBlobContent);
     await blobService.UploadBlockBlobAsync("sample-block-blob.txt", blockBlobStream);
 
-    // Create a sample append blob
     byte[] appendBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample append blob.");
     using var appendBlobStream = new MemoryStream(appendBlobContent);
     await blobService.UploadAppendBlobAsync("sample-append-blob.txt", appendBlobStream);
-
-    // Create a sample page blob (with a size multiple of 512 bytes)
-    byte[] pageBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample page blob.".PadRight(512, '\0').PadRight(512, '\0'));
+    
+    byte[] pageBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample page blob.".PadRight(512, '\0'));
     using var pageBlobStream = new MemoryStream(pageBlobContent);
     await blobService.UploadPageBlobAsync("sample-page-blob.txt", pageBlobStream);
 
     return Results.Ok(new { message = "Sample files uploaded successfully." });
 });
-
-
 
 app.Run();

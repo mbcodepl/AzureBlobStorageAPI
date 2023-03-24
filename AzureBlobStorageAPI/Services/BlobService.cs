@@ -82,15 +82,13 @@ public class BlobService
         return blobInfos;
     }
     
-    // Upload a block blob
     public async Task UploadBlockBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.UploadAsync(fileStream, overwrite: true);
     }
-
-    // Upload an append blob
+    
     public async Task UploadAppendBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -102,8 +100,7 @@ public class BlobService
         }
         await appendBlobClient.AppendBlockAsync(fileStream);
     }
-
-    // Upload a page blob
+    
     public async Task UploadPageBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);

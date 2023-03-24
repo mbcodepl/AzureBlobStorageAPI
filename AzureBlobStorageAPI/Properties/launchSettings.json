@@ -5,6 +5,9 @@
     "iisExpress": {
       "applicationUrl": "http://localhost:62106",
       "sslPort": 44303
+    },
+    "profiles": {
+      "Swagger": {}
     }
   },
   "profiles": {
@@ -32,6 +35,15 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "Swagger": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger/index.html",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:7273;http://localhost:5088"
     }
   }
 }
