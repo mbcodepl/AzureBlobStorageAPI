@@ -1,6 +1,8 @@
 using Azure;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Blobs.Specialized;
+using AzureBlobStorageAPI.Models;
 
 namespace AzureBlobStorageAPI.Services;
 
@@ -45,5 +47,80 @@ public class BlobService
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.SetAccessTierAsync(tier);
+    }
+    
+    public async Task<List<string>> ListContainersAsync()
+    {
+        AsyncPageable<BlobContainerItem>? containers = _blobServiceClient.GetBlobContainersAsync();
+        List<string> containerNames = new();
+
+        await foreach (var container in containers)
+        {
+            containerNames.Add(container.Name);
+        }
+
+        return containerNames;
+    }
+    
+    public async Task<List<BlobsInfo>> ListBlobsAsync()
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        AsyncPageable<BlobItem>? blobs = containerClient.GetBlobsAsync();
+        List<BlobsInfo> blobInfos = new();
+
+        await foreach (var blob in blobs)
+        {
+            blobInfos.Add(new BlobsInfo()
+            {
+                Name = blob.Name,
+                AccessTier = blob.Properties.AccessTier.ToString(),
+                BlobType = blob.Properties.BlobType.ToString(),
+                LastModified = blob.Properties.LastModified,
+            });
+        }
+
+        return blobInfos;
+    }
+    
+    // Upload a block blob
+    public async Task UploadBlockBlobAsync(string fileName, Stream fileStream)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var blobClient = containerClient.GetBlobClient(fileName);
+        await blobClient.UploadAsync(fileStream, overwrite: true);
+    }
+
+    // Upload an append blob
+    public async Task UploadAppendBlobAsync(string fileName, Stream fileStream)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var appendBlobClient = containerClient.GetAppendBlobClient(fileName);
+
+        if (!await appendBlobClient.ExistsAsync())
+        {
+            await appendBlobClient.CreateAsync();
+        }
+        await appendBlobClient.AppendBlockAsync(fileStream);
+    }
+
+    // Upload a page blob
+    public async Task UploadPageBlobAsync(string fileName, Stream fileStream)
+    {
+        var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        var pageBlobClient = containerClient.GetPageBlobClient(fileName);
+
+        long fileSize = fileStream.Length;
+        long roundedSize = (fileSize + 511) / 512 * 512;
+
+        if (!await pageBlobClient.ExistsAsync())
+        {
+            await pageBlobClient.CreateAsync(roundedSize);
+        }
+
+        MemoryStream paddedStream = new MemoryStream(new byte[roundedSize]);
+        await fileStream.CopyToAsync(paddedStream);
+        paddedStream.Seek(0, SeekOrigin.Begin);
+
+        await pageBlobClient.UploadPagesAsync(paddedStream, 0);
     }
 }
