@@ -8,7 +8,7 @@ using Swashbuckle.AspNetCore.SwaggerUI;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddAzureKeyVault(
     new Uri($"{builder.Configuration["AzureKeyVault:VaultUri"]}"),
@@ -19,13 +19,30 @@ builder.Services.AddSingleton<BlobService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c => c.SwaggerDoc("v1", new OpenApiInfo { Title = "AzureBlobStorageAPI", Version = "v1" }));
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapPost("api/blob/upload-sample-files", async (BlobService blobService) =>
+{
+    byte[] blockBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample block blob.");
+    using MemoryStream blockBlobStream = new MemoryStream(blockBlobContent);
+    await blobService.UploadBlockBlobAsync("sample-block-blob.txt", blockBlobStream);
+
+    byte[] appendBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample append blob.");
+    using MemoryStream appendBlobStream = new MemoryStream(appendBlobContent);
+    await blobService.UploadAppendBlobAsync("sample-append-blob.txt", appendBlobStream);
+    
+    byte[] pageBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample page blob.".PadRight(512, '\0'));
+    using MemoryStream pageBlobStream = new MemoryStream(pageBlobContent);
+    await blobService.UploadPageBlobAsync("sample-page-blob.txt", pageBlobStream);
+
+    return Results.Ok(new { message = "Sample files uploaded successfully." });
+});
 
 app.MapGet("api/blob/listcontainers", async (BlobService blobService) =>
 {
@@ -41,14 +58,14 @@ app.MapGet("api/blob/listblobs", async (BlobService blobService) =>
 
 app.MapPost("api/blob/upload", async (BlobService blobService, IFormFile file) =>
 {
-    await using var fileStream = file.OpenReadStream();
+    await using Stream fileStream = file.OpenReadStream();
     string url = await blobService.UploadAsync(file.FileName, fileStream);
     return Results.Ok(new { url });
 }).Accepts<IFormFile>("multipart/form-data");
 
 app.MapGet("api/blob/download/{fileName}", async (BlobService blobService, string fileName) =>
 {
-    var fileStream = await blobService.DownloadAsync(fileName);
+    Stream fileStream = await blobService.DownloadAsync(fileName);
     return Results.File(fileStream, "application/octet-stream", fileName);
 });
 
@@ -73,21 +90,10 @@ app.MapPut("api/blob/settier/{fileName}/{tier}", async (BlobService blobService,
 
 });
 
-app.MapPost("api/blob/upload-sample-files", async (BlobService blobService) =>
+app.MapPost("api/blob/copy/{sourceBlobName}/{destinationBlobName}", async (BlobService blobService, string sourceBlobName, string destinationBlobName) =>
 {
-    byte[] blockBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample block blob.");
-    using var blockBlobStream = new MemoryStream(blockBlobContent);
-    await blobService.UploadBlockBlobAsync("sample-block-blob.txt", blockBlobStream);
-
-    byte[] appendBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample append blob.");
-    using var appendBlobStream = new MemoryStream(appendBlobContent);
-    await blobService.UploadAppendBlobAsync("sample-append-blob.txt", appendBlobStream);
-    
-    byte[] pageBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample page blob.".PadRight(512, '\0'));
-    using var pageBlobStream = new MemoryStream(pageBlobContent);
-    await blobService.UploadPageBlobAsync("sample-page-blob.txt", pageBlobStream);
-
-    return Results.Ok(new { message = "Sample files uploaded successfully." });
+    string url = await blobService.CopyBlobAsync(sourceBlobName, destinationBlobName);
+    return Results.Ok(new { url });
 });
 
 app.Run();

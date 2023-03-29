@@ -34,7 +34,7 @@ public class BlobService
         Response<BlobDownloadInfo>? response = await blobClient.DownloadAsync();
         return response.Value.Content;
     }
-    
+
     public async Task DeleteAsync(string fileName)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -48,7 +48,7 @@ public class BlobService
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.SetAccessTierAsync(tier);
     }
-    
+
     public async Task<List<string>> ListContainersAsync()
     {
         AsyncPageable<BlobContainerItem>? containers = _blobServiceClient.GetBlobContainersAsync();
@@ -61,7 +61,7 @@ public class BlobService
 
         return containerNames;
     }
-    
+
     public async Task<List<BlobsInfo>> ListBlobsAsync()
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -81,14 +81,14 @@ public class BlobService
 
         return blobInfos;
     }
-    
+
     public async Task UploadBlockBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         var blobClient = containerClient.GetBlobClient(fileName);
         await blobClient.UploadAsync(fileStream, overwrite: true);
     }
-    
+
     public async Task UploadAppendBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -98,9 +98,10 @@ public class BlobService
         {
             await appendBlobClient.CreateAsync();
         }
+
         await appendBlobClient.AppendBlockAsync(fileStream);
     }
-    
+
     public async Task UploadPageBlobAsync(string fileName, Stream fileStream)
     {
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
@@ -119,5 +120,25 @@ public class BlobService
         paddedStream.Seek(0, SeekOrigin.Begin);
 
         await pageBlobClient.UploadPagesAsync(paddedStream, 0);
+    }
+    
+    public async Task<string> CopyBlobAsync(string sourceBlobName, string destinationBlobName)
+    {
+        BlobContainerClient containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+        BlobClient sourceBlobClient = containerClient.GetBlobClient(sourceBlobName);
+        BlobClient destinationBlobClient = containerClient.GetBlobClient(destinationBlobName);
+
+        Uri sourceBlobUri = sourceBlobClient.Uri;
+        await destinationBlobClient.StartCopyFromUriAsync(sourceBlobUri);
+
+        // Wait for the copy operation to complete
+        BlobProperties destinationBlobProperties = await destinationBlobClient.GetPropertiesAsync();
+        while (destinationBlobProperties.CopyStatus == CopyStatus.Pending)
+        {
+            await Task.Delay(1000);
+            destinationBlobProperties = await destinationBlobClient.GetPropertiesAsync();
+        }
+
+        return destinationBlobClient.Uri.ToString();
     }
 }
