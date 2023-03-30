@@ -130,8 +130,7 @@ public class BlobService
 
         Uri sourceBlobUri = sourceBlobClient.Uri;
         await destinationBlobClient.StartCopyFromUriAsync(sourceBlobUri);
-
-        // Wait for the copy operation to complete
+        
         BlobProperties destinationBlobProperties = await destinationBlobClient.GetPropertiesAsync();
         while (destinationBlobProperties.CopyStatus == CopyStatus.Pending)
         {
