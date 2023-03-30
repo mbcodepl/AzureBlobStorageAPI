@@ -29,11 +29,11 @@ if (app.Environment.IsDevelopment())
 
 app.MapPost("api/blob/upload-sample-files", async (BlobService blobService) =>
 {
-    byte[] blockBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample block blob.");
+    byte[] blockBlobContent = "This is a sample block blob."u8.ToArray();
     using MemoryStream blockBlobStream = new MemoryStream(blockBlobContent);
     await blobService.UploadBlockBlobAsync("sample-block-blob.txt", blockBlobStream);
 
-    byte[] appendBlobContent = System.Text.Encoding.UTF8.GetBytes("This is a sample append blob.");
+    byte[] appendBlobContent = "This is a sample append blob."u8.ToArray();
     using MemoryStream appendBlobStream = new MemoryStream(appendBlobContent);
     await blobService.UploadAppendBlobAsync("sample-append-blob.txt", appendBlobStream);
     
@@ -42,6 +42,14 @@ app.MapPost("api/blob/upload-sample-files", async (BlobService blobService) =>
     await blobService.UploadPageBlobAsync("sample-page-blob.txt", pageBlobStream);
 
     return Results.Ok(new { message = "Sample files uploaded successfully." });
+});
+
+app.MapPost("api/blob/append/{filename}/{content}", async (BlobService blobService, string fileName, string content) =>
+{
+    byte[] appendBlobContent = System.Text.Encoding.UTF8.GetBytes(content);
+    using MemoryStream appendBlobStream = new MemoryStream(appendBlobContent);
+    await blobService.UploadAppendBlobAsync(fileName, appendBlobStream);
+    return Results.Ok(new { message = "File appended successfully." });
 });
 
 app.MapGet("api/blob/listcontainers", async (BlobService blobService) =>
